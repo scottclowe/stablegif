@@ -37,6 +37,20 @@ verbosity_setting="-v warning";
 #------------------------------------------------------------------------------
 # Set up
 
+# Ensure ffmpeg binary does not error
+if ! $ffmpeg_binary -h &>/dev/null;
+then
+    echo "[STABLEGIF] command missing: $ffmpeg_binary";
+    exit 1;
+fi
+
+# Ensure vidstab is present
+if $ffmpeg_binary -v warning -filters | grep -qv "vidstab";
+then
+    echo "[STABLEGIF] vid.stab is not available with this copy of ffmpeg";
+    exit 1;
+fi
+
 # Input handling
 
 input=$1;

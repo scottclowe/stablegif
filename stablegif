@@ -6,18 +6,24 @@ set -e;
 
 input=$1;
 output=$2;
+STABILIZE=$3;
 
-if [[ $# -le 0 ]] || [[ $# -ge 3 ]];
+if [[ $# -le 0 ]] || [[ $# -ge 4 ]];
 then
-    echo "[STABLEGIF] Either one or two input arguments must be supplied!";
+    echo "[STABLEGIF] Number of inputs must be 1-3, but $# were given!";
     exit 1;
 fi;
 
-if [[ $# -eq 1 ]];
+if [[ $# -eq 1 ]] || [ $output == "-auto" ];
 then
     first=$(ls -1 $input | head -1);
     last=$(ls -1 $input | tail -1);
     output="${first%.*}-${last%.*}.gif"
+fi;
+
+if [[ $# -lt 3 ]];
+then
+    STABILIZE=1;
 fi;
 
 echo "[STABLEGIF] Will take frames from the glob '$1' and create a gif" \
@@ -70,17 +76,23 @@ $ffmpeg_binary $verbosity_setting -framerate "$framerate" \
     -pattern_type glob -i "$input" -r "$framerate" \
     -c:v libx264 -pix_fmt yuv420p "$vid_mp4_raw" -y \
     && echo "";
-# Stabilize the mp4
-echo "[STABLEGIF] Using vid.stab to stabilize movie frames";
-$ffmpeg_binary $verbosity_setting -i "$vid_mp4_raw" \
-    -vf vidstabdetect=result="$stabilize_trf":tripod=1"$vidstab_detect" \
-    -f null - \
-    && echo "";
-echo "[STABLEGIF] Using vid.stab create a stabilized movie";
-$ffmpeg_binary $verbosity_setting -i "$vid_mp4_raw" \
-    -vf vidstabtransform=input="$stabilize_trf":tripod=1"$vidstab_transform" \
-    -acodec copy "$vid_mp4_stable" -y \
-    && echo "";
+if [[ $STABILIZE -eq 0 ]];
+then
+    echo "[STABLEGIF] Skipping stabilization step";
+    vid_mp4_stable="$vid_mp4_raw";
+else
+    # Stabilize the mp4
+    echo "[STABLEGIF] Using vid.stab to stabilize movie frames";
+    $ffmpeg_binary $verbosity_setting -i "$vid_mp4_raw" \
+        -vf vidstabdetect=result="$stabilize_trf":tripod=1"$vidstab_detect" \
+        -f null - \
+        && echo "";
+    echo "[STABLEGIF] Using vid.stab create a stabilized movie";
+    $ffmpeg_binary $verbosity_setting -i "$vid_mp4_raw" \
+        -vf vidstabtransform=input="$stabilize_trf":tripod=1"$vidstab_transform" \
+        -acodec copy "$vid_mp4_stable" -y \
+        && echo "";
+fi;
 
 # http://blog.pkh.me/p/21-high-quality-gif-with-ffmpeg.html
 # https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality

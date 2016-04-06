@@ -54,8 +54,9 @@ If only one input is given, the output file name will default to
 ```
 <first-image-name-without-extension>-<last-image-name-without-extension>.gif
 ```
+This can also be obtained by setting `OUTPUTFILE` to `-auto`.
 
-### Example
+#### Example
 
 ```sh
 stablegif folder_containing_jpegs/*.jpg gif_folder/cool_clip.gif
@@ -65,6 +66,28 @@ or, with automatic output naming
 stablegif folder_containing_jpegs/*.jpg
 ```
 
+### Skipping stabilization step
+
+If your photos were taken with a tripod and do not need stabilizing, you should
+not stabilize them.
+Attempting to do so can only move the frames out of alignment and make a worse
+output.
+
+If you want to use StableGif with photos which are already stable, you can set
+whether or not to perform stabilization with an optional third input, set to 0:
+```
+stablegif INPUTGLOB OUTPUTFILE 0
+```
+
+#### Example
+
+```sh
+stablegif folder_containing_jpegs/*.jpg gif_folder/cool_clip.gif 0
+```
+or, with automatic output naming
+```sh
+stablegif folder_containing_jpegs/*.jpg -auto 0
+```
 
 ## Features
 

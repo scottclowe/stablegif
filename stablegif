@@ -34,6 +34,11 @@ verbosity_setting="-v warning";
 
 ###############################################################################
 
+#------------------------------------------------------------------------------
+# Set up
+
+# Input handling
+
 input=$1;
 output=$2;
 STABILIZE=$3;
@@ -81,6 +86,9 @@ mkdir -p $tmp_folder;
 # Add one so we round 0.5 upwards, and can handle the case where NFRAMES==1
 #MIDFRAME=$(((NFRAMES+1)/2))
 
+#------------------------------------------------------------------------------
+# Stabilize photos into an mp4 file
+
 # Not using this link atm
 # https://video.stackexchange.com/questions/7903/how-to-losslessly-encode-a-jpg-image-sequence-to-a-video-in-ffmpeg
 
@@ -112,6 +120,9 @@ else
         && echo "";
 fi;
 
+#------------------------------------------------------------------------------
+# Generate high quality GIF, with custom-made palette
+
 # http://blog.pkh.me/p/21-high-quality-gif-with-ffmpeg.html
 # https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
 #   http://superuser.com/a/556031
@@ -124,6 +135,9 @@ $ffmpeg_binary $verbosity_setting -i "$vid_mp4_stable" -i "$palette" \
     -lavfi "$palette_filters [x]; [x][1:v] paletteuse=dither=sierra2:diff_mode=1" \
     -y "$output" \
     && echo "";
+
+#------------------------------------------------------------------------------
+# Tear down
 
 echo "[STABLEGIF] Removing temporary files";
 rm -rf "$tmp_folder";

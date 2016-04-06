@@ -15,9 +15,9 @@ fi;
 
 if [[ $# -eq 1 ]];
 then
-    first=$(ls -1 *.JPG | head -1);
-    last=$(ls -1 *.JPG | tail -1);
-    output="${first%.*}-${last%.*}.gif";
+    first=$(ls -1 $input | head -1);
+    last=$(ls -1 $input | tail -1);
+    output="${first%.*}-${last%.*}.gif"
 fi;
 
 echo "[STABLEGIF] Will take frames from the glob '$1' and create a gif" \

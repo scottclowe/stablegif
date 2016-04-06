@@ -4,6 +4,36 @@ set -e;
 # Any subsequent commands which fail will cause the shell script to exit
 # immediately
 
+###############################################################################
+# Customisable settings
+#------------------------------------------------------------------------------
+
+# Path to ffmpeg binary
+# You will need a copy of ffmpeg compiled with vidstab support. It is easiest
+# for you to download a static build instead of compiling a copy yourself.
+ffmpeg_binary=ffmpeg;
+
+# Output GIF width
+output_pix_width="800";
+# Output GIF framerate (in frames per second), as a string.
+framerate="4";
+
+# vid.stab detection settings (if not blank, must begin with :)
+vidstab_detect=":shakiness=5:mincontrast=0.01";
+# vid.stab transform settings (if not blank, must begin with :)
+vidstab_transform=":zoom=0.5";  # Zoom so outer 0.5% of the frame is removed
+
+# Settings for GIF palette generation
+# This should also include the size settings for the output GIF.
+palette_filters="scale=$output_pix_width:-1:flags=lanczos";
+
+# Setting for ffmpeg verbosity.
+# Set to "" (empty string) to output everything.
+# Set to "-v warning" to only output warnings and errors.
+verbosity_setting="-v warning";
+
+###############################################################################
+
 input=$1;
 output=$2;
 STABILIZE=$3;
@@ -35,18 +65,6 @@ then
     echo "[STABLEGIF] Error! Output file '$output' already exists!";
     exit 1;
 fi
-
-# You will need a copy of ffmpeg compiled with vidstab support. It is easiest
-# for you to download a static build instead of compiling a copy yourself.
-ffmpeg_binary=ffmpeg;
-
-output_pix_width="800";  # Output GIF has 800px width (800x600 expected)
-framerate="4";  # Display 4 frames per second
-
-vidstab_detect=":shakiness=5:mincontrast=0.01";
-vidstab_transform=":zoom=0.5";  # Zoom so outer 0.5% of the frame is removed
-palette_filters="scale=$output_pix_width:-1:flags=lanczos";
-verbosity_setting="-v warning";  # Have ffmpeg only output warnings & errors
 
 # Use the process name as a subfolder, so we can run multiple stablegifs at
 # once without them overwriting each other

@@ -1,0 +1,108 @@
+#!/bin/bash
+
+set -e;
+# Any subsequent commands which fail will cause the shell script to exit
+# immediately
+
+input=$1;
+output=$2;
+
+if [[ $# -le 0 ]] || [[ $# -ge 3 ]];
+then
+    echo "[STABLEGIF] Either one or two input arguments must be supplied!";
+    exit 1;
+fi;
+
+if [[ $# -eq 1 ]];
+then
+    first=$(ls -1 *.JPG | head -1);
+    last=$(ls -1 *.JPG | tail -1);
+    output="${first%.*}-${last%.*}.gif";
+fi;
+
+echo "[STABLEGIF] Will take frames from the glob '$1' and create a gif" \
+    "named '$output'";
+
+# Check input
+if [ -e "$output" ];
+then
+    echo "[STABLEGIF] Error! Output file '$output' already exists!";
+    exit 1;
+fi
+
+# You will need a copy of ffmpeg compiled with vidstab support. It is easiest
+# for you to download a static build instead of compiling a copy yourself.
+ffmpeg_binary=ffmpeg;
+
+output_pix_width="800";  # Output GIF has 800px width (800x600 expected)
+framerate="4";  # Display 4 frames per second
+
+vidstab_detect=":shakiness=5:mincontrast=0.01";
+vidstab_transform=":zoom=0.5";  # Zoom so outer 0.5% of the frame is removed
+palette_filters="scale=$output_pix_width:-1:flags=lanczos";
+verbosity_setting="-v warning";  # Have ffmpeg only output warnings & errors
+
+# Use the process name as a subfolder, so we can run multiple stablegifs at
+# once without them overwriting each other
+tmp_folder="/tmp/stablegif/$$";
+vid_mp4_raw="$tmp_folder/raw.mp4";
+stabilize_trf="$tmp_folder/data.trf";
+vid_mp4_stable="$tmp_folder/stable.mp4";
+palette="$tmp_folder/palette.png";
+
+mkdir -p $tmp_folder;
+
+# Check the number of frames
+#NFRAMES=$(ls -1 $input | wc -l)
+# Add one so we round 0.5 upwards, and can handle the case where NFRAMES==1
+#MIDFRAME=$(((NFRAMES+1)/2))
+
+# Not using this link atm
+# https://video.stackexchange.com/questions/7903/how-to-losslessly-encode-a-jpg-image-sequence-to-a-video-in-ffmpeg
+
+# https://trac.ffmpeg.org/wiki/Create%20a%20video%20slideshow%20from%20images
+# http://superuser.com/a/624573/410128 See comment, ffmpeg -pattern_type glob -i '*.jpg' movie.mp4
+# Turn raw frames into an mp4 file
+echo "[STABLEGIF] Making an mp4 from raw frames";
+# Can make this lossless by adding the `-crf 0` parameter, but this gives no
+# benefit and takes significantly longer
+$ffmpeg_binary $verbosity_setting -framerate "$framerate" \
+    -pattern_type glob -i "$input" -r "$framerate" \
+    -c:v libx264 -pix_fmt yuv420p "$vid_mp4_raw" -y \
+    && echo "";
+# Stabilize the mp4
+echo "[STABLEGIF] Using vid.stab to stabilize movie frames";
+$ffmpeg_binary $verbosity_setting -i "$vid_mp4_raw" \
+    -vf vidstabdetect=result="$stabilize_trf":tripod=1"$vidstab_detect" \
+    -f null - \
+    && echo "";
+echo "[STABLEGIF] Using vid.stab create a stabilized movie";
+$ffmpeg_binary $verbosity_setting -i "$vid_mp4_raw" \
+    -vf vidstabtransform=input="$stabilize_trf":tripod=1"$vidstab_transform" \
+    -acodec copy "$vid_mp4_stable" -y \
+    && echo "";
+
+# http://blog.pkh.me/p/21-high-quality-gif-with-ffmpeg.html
+# https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
+#   http://superuser.com/a/556031
+echo "[STABLEGIF] Generating a 256 colour palette for the movie";
+$ffmpeg_binary $verbosity_setting -i "$vid_mp4_stable" \
+    -vf "$palette_filters,palettegen=stats_mode=diff" -y "$palette" \
+    && echo "";
+echo "[STABLEGIF] Generating gif";
+$ffmpeg_binary $verbosity_setting -i "$vid_mp4_stable" -i "$palette" \
+    -lavfi "$palette_filters [x]; [x][1:v] paletteuse=dither=sierra2:diff_mode=1" \
+    -y "$output" \
+    && echo "";
+
+echo "[STABLEGIF] Removing temporary files";
+rm -rf "$tmp_folder";
+
+# Status report
+if [ -e "$output" ];
+then
+    echo "[STABLEGIF] Finished successfully";
+else
+    echo "[STABLEGIF] File not created. Proccess was unsuccessful.";
+    exit 1;
+fi;

@@ -111,7 +111,7 @@ stablegif folder_containing_jpegs/*.jpg -auto 0
     uncompressed, intermediate file.
 
 
-  [this repository]: https://github.com/scottclowe/subcaption2subfig
+  [this repository]: https://github.com/scottclowe/stablegif
   [ffmpeg]: https://ffmpeg.org
   [ffmpeg-download]: https://ffmpeg.org/download.html
   [ffmpeg-linux-build]: http://johnvansickle.com/ffmpeg/
